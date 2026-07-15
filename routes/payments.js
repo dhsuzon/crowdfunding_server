@@ -1,7 +1,7 @@
 const express = require('express');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
-const verifyToken = require('../middleware/verifyToken');
+const verifyToken = require('../middleware/verifyBetterAuth');
 
 const router = express.Router();
 

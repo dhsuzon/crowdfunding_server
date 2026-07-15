@@ -2,7 +2,7 @@ const express = require('express');
 const Withdrawal = require('../models/Withdrawal');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const verifyToken = require('../middleware/verifyToken');
+const verifyToken = require('../middleware/verifyBetterAuth');
 const verifyRole = require('../middleware/verifyRole');
 
 const router = express.Router();
