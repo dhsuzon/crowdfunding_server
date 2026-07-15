@@ -1,17 +1,19 @@
-const jwt = require('jsonwebtoken');
+const { createRemoteJWKSet, jwtVerify } = require('jose');
 
-const verifyBetterAuth = (req, res, next) => {
+const JWKS = createRemoteJWKSet(new URL('/api/auth/.well-known/jwks.json', process.env.CLIENT_URL || 'http://localhost:3000'));
+
+const verifyBetterAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'No token provided' });
   }
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.BETTER_AUTH_SECRET);
+    const { payload } = await jwtVerify(token, JWKS);
     req.user = {
-      email: decoded.email || decoded.sub,
-      role: decoded.role || 'supporter',
-      name: decoded.name || '',
+      email: payload.email || payload.sub,
+      role: payload.role || 'supporter',
+      name: payload.name || '',
     };
     next();
   } catch (error) {
