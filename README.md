@@ -4,8 +4,8 @@ Backend API for the CrowdFundHub crowdfunding platform built with Express.js and
 
 ## Admin Credentials
 
-- **Email:** admin@crowdfundhub.com
-- **Password:** Admin@123
+- **Email:** admin@gmail.com
+- **Password:** admin12345
 
 ## Live Site
 
