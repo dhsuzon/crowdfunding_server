@@ -1,6 +1,19 @@
-const { createRemoteJWKSet, jwtVerify } = require('jose');
+let jose;
 
-const JWKS = createRemoteJWKSet(new URL('/api/auth/.well-known/jwks.json', process.env.CLIENT_URL || 'http://localhost:3000'));
+const getJose = async () => {
+  if (!jose) jose = await import('jose');
+  return jose;
+};
+
+let JWKS;
+
+const getJwks = async () => {
+  if (!JWKS) {
+    const { createRemoteJWKSet } = await getJose();
+    JWKS = createRemoteJWKSet(new URL('/api/auth/.well-known/jwks.json', process.env.CLIENT_URL || 'http://localhost:3000'));
+  }
+  return JWKS;
+};
 
 const verifyBetterAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -9,7 +22,9 @@ const verifyBetterAuth = async (req, res, next) => {
   }
   try {
     const token = authHeader.split(' ')[1];
-    const { payload } = await jwtVerify(token, JWKS);
+    const { jwtVerify } = await getJose();
+    const jwks = await getJwks();
+    const { payload } = await jwtVerify(token, jwks);
     req.user = {
       email: payload.email || payload.sub,
       role: payload.role || 'supporter',
