@@ -5,6 +5,19 @@ const verifyRole = require('../middleware/verifyRole');
 
 const router = express.Router();
 
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const user = await req.db.collection('user').findOne(
+      { email: req.user.email },
+      { projection: { password: 0 } }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.get('/', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
     const users = await req.db.collection('user').find(
