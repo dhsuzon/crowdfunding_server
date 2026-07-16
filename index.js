@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 require('dotenv').config();
 const { connectDB, getDb } = require('./config/db');
 
@@ -13,7 +12,19 @@ const notificationRoutes = require('./routes/notifications');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ origin: ['http://localhost:3000', 'https://crowdfunding-client-omega.vercel.app', 'https://crowdfunding-server-seven.vercel.app'], credentials: true }));
+const allowedOrigins = ['http://localhost:3000', 'https://crowdfunding-client-omega.vercel.app', 'https://crowdfunding-server-seven.vercel.app'];
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(express.json());
 
 // Lazy DB connection: connect on first request
