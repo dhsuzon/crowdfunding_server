@@ -1,7 +1,5 @@
 const express = require('express');
-const Withdrawal = require('../models/Withdrawal');
-const User = require('../models/User');
-const Notification = require('../models/Notification');
+const { ObjectId } = require('mongodb');
 const verifyToken = require('../middleware/verifyBetterAuth');
 const verifyRole = require('../middleware/verifyRole');
 
@@ -16,17 +14,18 @@ router.post('/', verifyToken, verifyRole('creator'), async (req, res) => {
     if (withdrawalCredits < 200) {
       return res.status(400).json({ message: 'Minimum 200 credits required for withdrawal.' });
     }
-    const user = await User.findOne({ email: req.user.email });
+    const user = await req.db.collection('users').findOne({ email: req.user.email });
     if (!user || user.totalRaisedCredits < withdrawalCredits) {
       return res.status(400).json({ message: 'Insufficient raised credits.' });
     }
     const withdrawalAmount = withdrawalCredits / 20;
-    const withdrawal = new Withdrawal({
+    const withdrawal = {
       creatorEmail: req.user.email, creatorName: req.user.name,
-      withdrawalCredits, withdrawalAmount, paymentSystem, accountNumber, status: 'pending'
-    });
-    await withdrawal.save();
-    res.status(201).json(withdrawal);
+      withdrawalCredits, withdrawalAmount, paymentSystem, accountNumber, status: 'pending',
+      createdAt: new Date()
+    };
+    const result = await req.db.collection('withdrawals').insertOne(withdrawal);
+    res.status(201).json({ ...withdrawal, _id: result.insertedId });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -34,8 +33,8 @@ router.post('/', verifyToken, verifyRole('creator'), async (req, res) => {
 
 router.get('/my/:email', verifyToken, verifyRole('creator'), async (req, res) => {
   try {
-    const withdrawals = await Withdrawal.find({ creatorEmail: req.params.email })
-      .sort({ createdAt: -1 });
+    const withdrawals = await req.db.collection('withdrawals').find({ creatorEmail: req.params.email })
+      .sort({ createdAt: -1 }).toArray();
     res.json(withdrawals);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -44,7 +43,7 @@ router.get('/my/:email', verifyToken, verifyRole('creator'), async (req, res) =>
 
 router.get('/pending', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const withdrawals = await Withdrawal.find({ status: 'pending' }).sort({ createdAt: -1 });
+    const withdrawals = await req.db.collection('withdrawals').find({ status: 'pending' }).sort({ createdAt: -1 }).toArray();
     res.json(withdrawals);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -53,20 +52,24 @@ router.get('/pending', verifyToken, verifyRole('admin'), async (req, res) => {
 
 router.patch('/:id/approve', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const withdrawal = await Withdrawal.findById(req.params.id);
+    const withdrawal = await req.db.collection('withdrawals').findOne({ _id: new ObjectId(req.params.id) });
     if (!withdrawal) return res.status(404).json({ message: 'Withdrawal not found.' });
-    withdrawal.status = 'approved';
-    await withdrawal.save();
-    await User.findOneAndUpdate(
+    await req.db.collection('withdrawals').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { status: 'approved' } }
+    );
+    await req.db.collection('users').updateOne(
       { email: withdrawal.creatorEmail },
       { $inc: { totalRaisedCredits: -withdrawal.withdrawalCredits } }
     );
-    await new Notification({
+    await req.db.collection('notifications').insertOne({
       message: `Your withdrawal request of $${withdrawal.withdrawalAmount} (${withdrawal.withdrawalCredits} credits) has been approved.`,
       toEmail: withdrawal.creatorEmail,
-      actionRoute: '/dashboard/creator'
-    }).save();
-    res.json(withdrawal);
+      actionRoute: '/dashboard/creator',
+      createdAt: new Date()
+    });
+    const updated = await req.db.collection('withdrawals').findOne({ _id: new ObjectId(req.params.id) });
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

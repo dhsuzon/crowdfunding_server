@@ -1,5 +1,5 @@
 const express = require('express');
-const User = require('../models/User');
+const { ObjectId } = require('mongodb');
 const verifyToken = require('../middleware/verifyBetterAuth');
 const verifyRole = require('../middleware/verifyRole');
 
@@ -7,7 +7,10 @@ const router = express.Router();
 
 router.get('/', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await req.db.collection('users').find(
+      {},
+      { projection: { password: 0 } }
+    ).sort({ createdAt: -1 }).toArray();
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -20,9 +23,13 @@ router.patch('/:id/role', verifyToken, verifyRole('admin'), async (req, res) => 
     if (!['supporter', 'creator', 'admin'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role.' });
     }
-    const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found.' });
-    res.json(user);
+    const result = await req.db.collection('users').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { role } },
+      { returnDocument: 'after', projection: { password: 0 } }
+    );
+    if (!result) return res.status(404).json({ message: 'User not found.' });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -30,8 +37,8 @@ router.patch('/:id/role', verifyToken, verifyRole('admin'), async (req, res) => 
 
 router.delete('/:id', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found.' });
+    const result = await req.db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found.' });
     res.json({ message: 'User deleted successfully.' });
   } catch (error) {
     res.status(500).json({ message: error.message });

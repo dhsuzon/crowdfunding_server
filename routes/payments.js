@@ -1,6 +1,4 @@
 const express = require('express');
-const Payment = require('../models/Payment');
-const User = require('../models/User');
 const verifyToken = require('../middleware/verifyBetterAuth');
 
 const router = express.Router();
@@ -34,15 +32,19 @@ router.post('/confirm', verifyToken, async (req, res) => {
     const { paymentIntentId, credits, amount } = req.body;
     const pkg = PACKAGES[credits.toString()];
     if (!pkg) return res.status(400).json({ message: 'Invalid package.' });
-    const payment = new Payment({
+    const payment = {
       userEmail: req.user.email, userName: req.user.name,
       amount: pkg.price, credits: pkg.credits,
       packageName: `${pkg.credits} credits`, stripePaymentId: paymentIntentId,
-      status: 'success'
-    });
-    await payment.save();
-    await User.findOneAndUpdate({ email: req.user.email }, { $inc: { credits: pkg.credits } });
-    res.json(payment);
+      status: 'success',
+      createdAt: new Date()
+    };
+    const result = await req.db.collection('payments').insertOne(payment);
+    await req.db.collection('users').updateOne(
+      { email: req.user.email },
+      { $inc: { credits: pkg.credits } }
+    );
+    res.status(201).json({ ...payment, _id: result.insertedId });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -50,7 +52,7 @@ router.post('/confirm', verifyToken, async (req, res) => {
 
 router.get('/:email', verifyToken, async (req, res) => {
   try {
-    const payments = await Payment.find({ userEmail: req.params.email }).sort({ createdAt: -1 });
+    const payments = await req.db.collection('payments').find({ userEmail: req.params.email }).sort({ createdAt: -1 }).toArray();
     res.json(payments);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -59,7 +61,7 @@ router.get('/:email', verifyToken, async (req, res) => {
 
 router.get('/admin/all', verifyToken, async (req, res) => {
   try {
-    const payments = await Payment.find().sort({ createdAt: -1 });
+    const payments = await req.db.collection('payments').find().sort({ createdAt: -1 }).toArray();
     res.json(payments);
   } catch (error) {
     res.status(500).json({ message: error.message });

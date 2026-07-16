@@ -1,13 +1,13 @@
 const express = require('express');
-const Notification = require('../models/Notification');
+const { ObjectId } = require('mongodb');
 const verifyToken = require('../middleware/verifyBetterAuth');
 
 const router = express.Router();
 
 router.get('/:email', verifyToken, async (req, res) => {
   try {
-    const notifications = await Notification.find({ toEmail: req.params.email })
-      .sort({ createdAt: -1 }).limit(50);
+    const notifications = await req.db.collection('notifications').find({ toEmail: req.params.email })
+      .sort({ createdAt: -1 }).limit(50).toArray();
     res.json(notifications);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -16,10 +16,12 @@ router.get('/:email', verifyToken, async (req, res) => {
 
 router.patch('/:id/read', verifyToken, async (req, res) => {
   try {
-    const notification = await Notification.findByIdAndUpdate(
-      req.params.id, { isRead: true }, { new: true }
+    const result = await req.db.collection('notifications').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { isRead: true } },
+      { returnDocument: 'after' }
     );
-    res.json(notification);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -27,9 +29,9 @@ router.patch('/:id/read', verifyToken, async (req, res) => {
 
 router.patch('/read-all/:email', verifyToken, async (req, res) => {
   try {
-    await Notification.updateMany(
+    await req.db.collection('notifications').updateMany(
       { toEmail: req.params.email, isRead: false },
-      { isRead: true }
+      { $set: { isRead: true } }
     );
     res.json({ message: 'All notifications marked as read.' });
   } catch (error) {
