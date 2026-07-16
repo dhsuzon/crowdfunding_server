@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const connectDB = require('./config/db');
+const { connectDB, getDb } = require('./config/db');
 
 const userRoutes = require('./routes/users');
 const campaignRoutes = require('./routes/campaigns');
@@ -17,6 +17,11 @@ app.use(cors({ origin: ['http://localhost:3000', 'https://your-app.vercel.app'],
 app.use(express.json());
 
 connectDB();
+
+app.use((req, res, next) => {
+  req.db = getDb();
+  next();
+});
 
 app.use('/api/users', userRoutes);
 app.use('/api/campaigns', campaignRoutes);

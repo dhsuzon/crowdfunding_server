@@ -1,8 +1,13 @@
-const mongoose = require('mongoose');
+const { MongoClient } = require('mongodb');
+
+const uri = process.env.MONGODB_URI;
+let db = null;
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    const client = new MongoClient(uri);
+    await client.connect();
+    db = client.db('crowdfundingDatabase');
     console.log('MongoDB Connected Successfully');
   } catch (error) {
     console.error('MongoDB Connection Error:', error.message);
@@ -10,4 +15,9 @@ const connectDB = async () => {
   }
 };
 
-module.exports = connectDB;
+const getDb = () => {
+  if (!db) throw new Error('Database not initialized');
+  return db;
+};
+
+module.exports = { connectDB, getDb };

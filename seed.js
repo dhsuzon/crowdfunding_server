@@ -1,23 +1,24 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
+const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
-const User = require('./models/User');
-const Campaign = require('./models/Campaign');
 
 const seed = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    const client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
+    const db = client.db('crowdfundingDatabase');
     console.log('Connected to MongoDB');
 
-    const adminExists = await User.findOne({ email: 'admin@crowdfundhub.com' });
+    const adminExists = await db.collection('users').findOne({ email: 'admin@gmail.com' });
     if (!adminExists) {
-      const hashedPassword = await bcrypt.hash('Admin@123', 10);
-      await User.create({
-        name: 'Admin',
-        email: 'admin@crowdfundhub.com',
+      const hashedPassword = await bcrypt.hash('admin12345', 10);
+      await db.collection('users').insertOne({
+        name: 'admin',
+        email: 'admin@gmail.com',
         password: hashedPassword,
         role: 'admin',
         credits: 100000,
+        createdAt: new Date()
       });
       console.log('Admin user created');
     }
