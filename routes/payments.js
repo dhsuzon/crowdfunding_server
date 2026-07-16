@@ -40,7 +40,7 @@ router.post('/confirm', verifyToken, async (req, res) => {
       createdAt: new Date()
     };
     const result = await req.db.collection('payments').insertOne(payment);
-    await req.db.collection('users').updateOne(
+    await req.db.collection('user').updateOne(
       { email: req.user.email },
       { $inc: { credits: pkg.credits } }
     );

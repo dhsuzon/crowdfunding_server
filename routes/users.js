@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const users = await req.db.collection('users').find(
+    const users = await req.db.collection('user').find(
       {},
       { projection: { password: 0 } }
     ).sort({ createdAt: -1 }).toArray();
@@ -23,7 +23,7 @@ router.patch('/:id/role', verifyToken, verifyRole('admin'), async (req, res) => 
     if (!['supporter', 'creator', 'admin'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role.' });
     }
-    const result = await req.db.collection('users').findOneAndUpdate(
+    const result = await req.db.collection('user').findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
       { $set: { role } },
       { returnDocument: 'after', projection: { password: 0 } }
@@ -37,7 +37,7 @@ router.patch('/:id/role', verifyToken, verifyRole('admin'), async (req, res) => 
 
 router.delete('/:id', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const result = await req.db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
+    const result = await req.db.collection('user').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found.' });
     res.json({ message: 'User deleted successfully.' });
   } catch (error) {

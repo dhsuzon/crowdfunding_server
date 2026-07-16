@@ -11,11 +11,11 @@ router.post('/', verifyToken, async (req, res) => {
     if (!campaignId || !contributionAmount || contributionAmount <= 0) {
       return res.status(400).json({ message: 'Valid contribution amount is required.' });
     }
-    const supporter = await req.db.collection('users').findOne({ email: req.user.email });
+    const supporter = await req.db.collection('user').findOne({ email: req.user.email });
     if (!supporter || supporter.credits < contributionAmount) {
       return res.status(400).json({ message: 'Insufficient credits.' });
     }
-    await req.db.collection('users').updateOne(
+    await req.db.collection('user').updateOne(
       { email: req.user.email },
       { $inc: { credits: -contributionAmount } }
     );
@@ -86,7 +86,7 @@ router.patch('/:id/approve', verifyToken, verifyRole('creator'), async (req, res
       { _id: new ObjectId(contribution.campaignId) },
       { $inc: { amountRaised: contribution.contributionAmount } }
     );
-    await req.db.collection('users').updateOne(
+    await req.db.collection('user').updateOne(
       { email: contribution.creatorEmail },
       { $inc: { totalRaisedCredits: contribution.contributionAmount } }
     );
@@ -112,7 +112,7 @@ router.patch('/:id/reject', verifyToken, verifyRole('creator'), async (req, res)
       { _id: new ObjectId(req.params.id) },
       { $set: { status: 'rejected' } }
     );
-    await req.db.collection('users').updateOne(
+    await req.db.collection('user').updateOne(
       { email: contribution.supporterEmail },
       { $inc: { credits: contribution.contributionAmount } }
     );

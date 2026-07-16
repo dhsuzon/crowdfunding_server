@@ -14,7 +14,7 @@ router.post('/', verifyToken, verifyRole('creator'), async (req, res) => {
     if (withdrawalCredits < 200) {
       return res.status(400).json({ message: 'Minimum 200 credits required for withdrawal.' });
     }
-    const user = await req.db.collection('users').findOne({ email: req.user.email });
+    const user = await req.db.collection('user').findOne({ email: req.user.email });
     if (!user || user.totalRaisedCredits < withdrawalCredits) {
       return res.status(400).json({ message: 'Insufficient raised credits.' });
     }
@@ -58,7 +58,7 @@ router.patch('/:id/approve', verifyToken, verifyRole('admin'), async (req, res) 
       { _id: new ObjectId(req.params.id) },
       { $set: { status: 'approved' } }
     );
-    await req.db.collection('users').updateOne(
+    await req.db.collection('user').updateOne(
       { email: withdrawal.creatorEmail },
       { $inc: { totalRaisedCredits: -withdrawal.withdrawalCredits } }
     );

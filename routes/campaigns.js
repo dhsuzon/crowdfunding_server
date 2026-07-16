@@ -119,7 +119,7 @@ router.delete('/:id', verifyToken, verifyRole('creator'), async (req, res) => {
     if (campaign.creatorEmail !== req.user.email) return res.status(403).json({ message: 'Not authorized.' });
     const approvedContributions = await req.db.collection('contributions').find({ campaignId: req.params.id, status: 'approved' }).toArray();
     for (const contribution of approvedContributions) {
-      await req.db.collection('users').updateOne(
+      await req.db.collection('user').updateOne(
         { email: contribution.supporterEmail },
         { $inc: { credits: contribution.contributionAmount } }
       );
@@ -193,7 +193,7 @@ router.delete('/:id/admin-delete', verifyToken, verifyRole('admin'), async (req,
     if (!campaign) return res.status(404).json({ message: 'Campaign not found.' });
     const approvedContributions = await req.db.collection('contributions').find({ campaignId: req.params.id, status: 'approved' }).toArray();
     for (const contribution of approvedContributions) {
-      await req.db.collection('users').updateOne(
+      await req.db.collection('user').updateOne(
         { email: contribution.supporterEmail },
         { $inc: { credits: contribution.contributionAmount } }
       );
