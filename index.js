@@ -2,6 +2,10 @@ const express = require('express');
 require('dotenv').config();
 const { connectDB, getDb } = require('./config/db');
 
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION:', err);
+});
+
 const userRoutes = require('./routes/users');
 const campaignRoutes = require('./routes/campaigns');
 const contributionRoutes = require('./routes/contributions');
