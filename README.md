@@ -9,7 +9,7 @@ Backend API for the CrowdFundHub crowdfunding platform built with Express.js and
 
 ## Live Site
 
-[LIVE_SERVER_URL]
+[https://crowdfunding-server-seven.vercel.app/](https://crowdfunding-server-seven.vercel.app/)
 
 ## Features
 
