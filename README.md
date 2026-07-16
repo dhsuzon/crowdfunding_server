@@ -6,13 +6,14 @@ Backend API for the CrowdFundHub crowdfunding platform built with Express.js and
 
 - **Email:** admin@gmail.com
 - **Password:** admin12345
+
 ## Live Site
 
-[Coming Soon - Deploy on Vercel/Render]
+[LIVE_SERVER_URL]
 
 ## Features
 
-- RESTful API with Express.js and MongoDB (Mongoose)
+- RESTful API with Express.js and MongoDB (native driver)
 - JWT-based authentication with access tokens
 - Role-based authorization middleware (Supporter, Creator, Admin)
 - User registration with auto-credit allocation (50 for Supporter, 20 for Creator)
