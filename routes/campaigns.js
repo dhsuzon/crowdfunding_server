@@ -194,6 +194,26 @@ router.patch('/:id/reject', verifyToken, verifyRole('admin'), async (req, res) =
   }
 });
 
+router.patch('/:id/revert-pending', verifyToken, verifyRole('admin'), async (req, res) => {
+  try {
+    const result = await req.db.collection('campaigns').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { status: 'pending' } },
+      { returnDocument: 'after' }
+    );
+    if (!result) return res.status(404).json({ message: 'Campaign not found.' });
+    await req.db.collection('notifications').insertOne({
+      message: `Your campaign "${result.title}" has been reverted to pending by the admin.`,
+      toEmail: result.creatorEmail,
+      actionRoute: '/dashboard/creator',
+      createdAt: new Date()
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.post('/:id/report', verifyToken, async (req, res) => {
   try {
     const { reason } = req.body;
