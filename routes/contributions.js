@@ -54,9 +54,13 @@ router.get('/my', verifyToken, async (req, res) => {
 
 router.get('/approved', verifyToken, async (req, res) => {
   try {
-    const contributions = await req.db.collection('contributions').find({ supporterEmail: req.user.email, status: 'approved' })
-      .sort({ createdAt: -1 }).toArray();
-    res.json(contributions);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { supporterEmail: req.user.email, status: 'approved' };
+    const total = await req.db.collection('contributions').countDocuments(query);
+    const data = await req.db.collection('contributions').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -64,10 +68,13 @@ router.get('/approved', verifyToken, async (req, res) => {
 
 router.get('/pending/:creatorEmail', verifyToken, verifyRole('creator'), async (req, res) => {
   try {
-    const contributions = await req.db.collection('contributions').find({
-      creatorEmail: req.params.creatorEmail, status: 'pending'
-    }).sort({ createdAt: -1 }).toArray();
-    res.json(contributions);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { creatorEmail: req.params.creatorEmail, status: 'pending' };
+    const total = await req.db.collection('contributions').countDocuments(query);
+    const data = await req.db.collection('contributions').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

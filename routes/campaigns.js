@@ -27,11 +27,15 @@ router.post('/', verifyToken, verifyRole('creator'), async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { category, search } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     const query = { status: 'approved', deadline: { $gte: new Date() } };
     if (category) query.category = category;
     if (search) query.title = { $regex: search, $options: 'i' };
-    const campaigns = await req.db.collection('campaigns').find(query).sort({ createdAt: -1 }).toArray();
-    res.json(campaigns);
+    const total = await req.db.collection('campaigns').countDocuments(query);
+    const data = await req.db.collection('campaigns').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -49,9 +53,13 @@ router.get('/top-funded', async (req, res) => {
 
 router.get('/my', verifyToken, verifyRole('creator'), async (req, res) => {
   try {
-    const campaigns = await req.db.collection('campaigns').find({ creatorEmail: req.user.email })
-      .sort({ deadline: -1 }).toArray();
-    res.json(campaigns);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { creatorEmail: req.user.email };
+    const total = await req.db.collection('campaigns').countDocuments(query);
+    const data = await req.db.collection('campaigns').find(query).sort({ deadline: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -59,8 +67,13 @@ router.get('/my', verifyToken, verifyRole('creator'), async (req, res) => {
 
 router.get('/pending', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const campaigns = await req.db.collection('campaigns').find({ status: 'pending' }).sort({ createdAt: -1 }).toArray();
-    res.json(campaigns);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { status: 'pending' };
+    const total = await req.db.collection('campaigns').countDocuments(query);
+    const data = await req.db.collection('campaigns').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -68,8 +81,12 @@ router.get('/pending', verifyToken, verifyRole('admin'), async (req, res) => {
 
 router.get('/all', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const campaigns = await req.db.collection('campaigns').find().sort({ createdAt: -1 }).toArray();
-    res.json(campaigns);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const total = await req.db.collection('campaigns').countDocuments();
+    const data = await req.db.collection('campaigns').find().sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -77,8 +94,13 @@ router.get('/all', verifyToken, verifyRole('admin'), async (req, res) => {
 
 router.get('/reported', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const campaigns = await req.db.collection('campaigns').find({ isReported: true }).sort({ createdAt: -1 }).toArray();
-    res.json(campaigns);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { isReported: true };
+    const total = await req.db.collection('campaigns').countDocuments(query);
+    const data = await req.db.collection('campaigns').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

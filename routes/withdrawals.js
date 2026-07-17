@@ -7,7 +7,8 @@ const router = express.Router();
 
 router.post('/', verifyToken, verifyRole('creator'), async (req, res) => {
   try {
-    const { withdrawalCredits, paymentSystem, accountNumber } = req.body;
+    let { withdrawalCredits, paymentSystem, accountNumber } = req.body;
+    withdrawalCredits = Number(withdrawalCredits);
     if (!withdrawalCredits || !paymentSystem || !accountNumber) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
@@ -33,9 +34,13 @@ router.post('/', verifyToken, verifyRole('creator'), async (req, res) => {
 
 router.get('/my/:email', verifyToken, verifyRole('creator'), async (req, res) => {
   try {
-    const withdrawals = await req.db.collection('withdrawals').find({ creatorEmail: req.params.email })
-      .sort({ createdAt: -1 }).toArray();
-    res.json(withdrawals);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { creatorEmail: req.params.email };
+    const total = await req.db.collection('withdrawals').countDocuments(query);
+    const data = await req.db.collection('withdrawals').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -43,8 +48,13 @@ router.get('/my/:email', verifyToken, verifyRole('creator'), async (req, res) =>
 
 router.get('/pending', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const withdrawals = await req.db.collection('withdrawals').find({ status: 'pending' }).sort({ createdAt: -1 }).toArray();
-    res.json(withdrawals);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { status: 'pending' };
+    const total = await req.db.collection('withdrawals').countDocuments(query);
+    const data = await req.db.collection('withdrawals').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

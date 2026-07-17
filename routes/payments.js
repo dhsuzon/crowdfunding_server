@@ -52,8 +52,13 @@ router.post('/confirm', verifyToken, async (req, res) => {
 
 router.get('/:email', verifyToken, async (req, res) => {
   try {
-    const payments = await req.db.collection('payments').find({ userEmail: req.params.email }).sort({ createdAt: -1 }).toArray();
-    res.json(payments);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const query = { userEmail: req.params.email };
+    const total = await req.db.collection('payments').countDocuments(query);
+    const data = await req.db.collection('payments').find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -61,8 +66,12 @@ router.get('/:email', verifyToken, async (req, res) => {
 
 router.get('/admin/all', verifyToken, async (req, res) => {
   try {
-    const payments = await req.db.collection('payments').find().sort({ createdAt: -1 }).toArray();
-    res.json(payments);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const total = await req.db.collection('payments').countDocuments();
+    const data = await req.db.collection('payments').find().sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

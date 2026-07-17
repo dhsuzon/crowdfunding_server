@@ -20,11 +20,15 @@ router.get('/me', verifyToken, async (req, res) => {
 
 router.get('/', verifyToken, verifyRole('admin'), async (req, res) => {
   try {
-    const users = await req.db.collection('user').find(
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const total = await req.db.collection('user').countDocuments();
+    const data = await req.db.collection('user').find(
       {},
       { projection: { password: 0 } }
-    ).sort({ createdAt: -1 }).toArray();
-    res.json(users);
+    ).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
