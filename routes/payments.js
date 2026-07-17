@@ -53,7 +53,7 @@ router.post('/confirm', verifyToken, async (req, res) => {
 router.get('/:email', verifyToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
     const query = { userEmail: req.params.email };
     const total = await req.db.collection('payments').countDocuments(query);
@@ -67,7 +67,7 @@ router.get('/:email', verifyToken, async (req, res) => {
 router.get('/admin/all', verifyToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
     const total = await req.db.collection('payments').countDocuments();
     const data = await req.db.collection('payments').find().sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
