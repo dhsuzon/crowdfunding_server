@@ -178,7 +178,7 @@ router.patch('/:id/reject', verifyToken, verifyRole('admin'), async (req, res) =
   try {
     const result = await req.db.collection('campaigns').findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
-      { $set: { status: 'rejected' } },
+      { $set: { status: 'rejected', isReported: false } },
       { returnDocument: 'after' }
     );
     if (!result) return res.status(404).json({ message: 'Campaign not found.' });
